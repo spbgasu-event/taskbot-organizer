@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Панель организатора</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geologica:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0ede8; --surface: #fff; --surface2: #f7f4f0;
+    --accent: #1a1a2e; --red: #e63946; --green: #2a9d8f;
+    --text: #1a1a2e; --muted: #8a8a9a; --border: #e0dbd4; --yellow: #e9c46a;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Geologica', sans-serif; min-height: 100vh; }
+
+  .header { background: var(--accent); color: #fff; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 68px; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; }
+  .logo span { color: var(--red); }
+  .stat-pill { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 6px 14px; font-size: 12px; display: flex; gap: 16px; }
+  .stat-pill b { color: var(--yellow); }
+
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; padding: 0 32px; gap: 4px; }
+  .nav-btn { padding: 16px 20px; font-family: 'Geologica', sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; line-height: 1; }
+  .stat-num.red { color: var(--red); }
+  .stat-num.green { color: var(--green); }
+  .stat-num.yellow { color: #b8860b; }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; }
+  .dept-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .dept-tag { padding: 5px 14px; border-radius: 100px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); cursor: pointer; transition: all 0.15s; }
+  .dept-tag:hover { border-color: var(--accent); }
+  .dept-tag.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 10px; }
+  .task-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .task-header:hover { background: var(--surface2); }
+  .task-left { display: flex; align-items: center; gap: 10px; }
+  .task-title { font-weight: 700; font-size: 15px; }
+  .dept-badge { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 10px; border-radius: 100px; background: rgba(26,26,46,0.07); }
+  .closed-badge { background: rgba(230,57,70,0.1); color: var(--red); }
+  .task-right { display: flex; align-items: center; gap: 12px; }
+  .slots-text { font-size: 12px; color: var(--muted); }
+  .bar { width: 72px; height: 4px; background: var(--border); border-radius: 100px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 100px; transition: width 0.4s; background: var(--accent); }
+  .bar-fill.full { background: var(--green); }
+  .chevron { color: var(--muted); font-size: 11px; transition: transform 0.2s; }
+  .chevron.open { transform: rotate(180deg); }
+  .close-btn { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 100px; border: 1px solid rgba(230,57,70,0.4); color: var(--red); background: rgba(230,57,70,0.06); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .close-btn:hover { background: var(--red); color: #fff; }
+
+  .task-body { border-top: 1px solid var(--border); display: none; }
+  .task-body.open { display: block; }
+  .task-info { padding: 14px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .task-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+  .dates-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .date-chip { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); }
+  .date-chip.dl { color: var(--red); border-color: rgba(230,57,70,0.3); }
+
+  .p-table { width: 100%; border-collapse: collapse; }
+  .p-table th { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 10px 20px; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .p-table td { padding: 11px 20px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .p-table tr:last-child td { border-bottom: none; }
+  .p-table tr:hover td { background: var(--surface2); }
+  .tg-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .tg-link:hover { color: var(--red); }
+
+  .check-box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; background: var(--surface); font-size: 12px; }
+  .check-box.checked { background: var(--green); border-color: var(--green); color: white; }
+  .check-box.checked::after { content: "✓"; }
+  .check-box:not(.checked):hover { border-color: var(--green); }
+
+  .empty { padding: 40px; text-align: center; color: var(--muted); font-size: 14px; }
+  .loader { text-align: center; padding: 60px; color: var(--muted); }
+
+  /* PARTICIPANTS TAB */
+  .search-bar { width: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font-family: 'Geologica', sans-serif; font-size: 14px; outline: none; margin-bottom: 16px; }
+  .search-bar:focus { border-color: var(--accent); }
+  .full-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  .full-table th { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .full-table td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .full-table tr:last-child td { border-bottom: none; }
+  .full-table tr:hover td { background: var(--surface2); }
+
+  /* STATS TAB */
+  .fail-card { background: var(--surface); border: 1px solid rgba(230,57,70,0.2); border-left: 3px solid var(--red); border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+  .fail-name { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+  .fail-task { font-size: 12px; color: var(--muted); }
+  .fail-checks { display: flex; gap: 6px; }
+  .check-chip { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 100px; }
+  .check-chip.done { background: rgba(42,157,143,0.12); color: var(--green); }
+  .check-chip.fail { background: rgba(230,57,70,0.1); color: var(--red); }
+  .fail-count-banner { background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.2); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 14px; color: var(--red); font-weight: 600; }
+
+  .save-btn { position: fixed; bottom: 24px; right: 24px; background: var(--accent); color: #fff; border: none; border-radius: 100px; padding: 13px 24px; font-family: 'Geologica', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; display: none; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(26,26,46,0.25); transition: all 0.2s; z-index: 200; }
+  .save-btn:hover { transform: translateY(-2px); }
+  .save-btn.visible { display: flex; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  @media(max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Студсовет <span>·</span> Организатор</div>
+  <div class="stat-pill">
+    <span>Задач: <b id="h-tasks">—</b></span>
+    <span>Участников: <b id="h-parts">—</b></span>
+    <span>Не выполнили: <b id="h-failed" style="color:#ff6b6b">—</b></span>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="switchTab('tasks')">📋 Задачи</button>
+  <button class="nav-btn" onclick="switchTab('closed')">🔒 Закрытые</button>
+  <button class="nav-btn" onclick="switchTab('participants')">👥 Участники</button>
+  <button class="nav-btn" onclick="switchTab('stats')">📊 Статистика</button>
+</div>
+
+<div class="main">
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Открытых задач</div><div class="stat-num" id="s-open">—</div></div>
+    <div class="stat-card"><div class="stat-label">Закрытых задач</div><div class="stat-num red" id="s-closed">—</div></div>
+    <div class="stat-card"><div class="stat-label">Заполнены</div><div class="stat-num green" id="s-full">—</div></div>
+    <div class="stat-card"><div class="stat-label">Участников</div><div class="stat-num" id="s-parts">—</div></div>
+    <div class="stat-card"><div class="stat-label">Не выполнили</div><div class="stat-num red" id="s-failed">—</div></div>
+  </div>
+
+  <!-- ЗАДАЧИ -->
+  <div class="tab-content active" id="tab-tasks">
+    <div class="section-header">
+      <div class="section-title">Открытые задачи</div>
+      <div class="dept-filter" id="dept-filter-open"></div>
+    </div>
+    <div id="tasks-list"><div class="loader">Загружаем...</div></div>
+  </div>
+
+  <!-- ЗАКРЫТЫЕ -->
+  <div class="tab-content" id="tab-closed">
+    <div class="section-header">
+      <div class="section-title">Закрытые задачи</div>
+      <div class="dept-filter" id="dept-filter-closed"></div>
+    </div>
+    <div id="closed-list"><div class="loader">Загружаем...</div></div>
+  </div>
+
+  <!-- УЧАСТНИКИ -->
+  <div class="tab-content" id="tab-participants">
+    <div class="section-title" style="margin-bottom:16px">Все участники</div>
+    <input class="search-bar" id="p-search" placeholder="Поиск по имени, задаче, отделу..." oninput="filterParticipants()">
+    <div id="participants-table"></div>
+  </div>
+
+  <!-- СТАТИСТИКА -->
+  <div class="tab-content" id="tab-stats">
+    <div class="section-title" style="margin-bottom:16px">Статистика невыполненных</div>
+    <div id="stats-content"><div class="loader">Загружаем...</div></div>
+  </div>
+</div>
+
+<button class="save-btn" id="save-btn" onclick="saveChecklist()">💾 Сохранить</button>
+
+<script>
+const API = "https://taskbot-backend-srm4.onrender.com";
+let allTasks = [], closedTasks = [], allParticipants = [], checklist = {}, pendingChanges = {};
+let taskParticipants = {};
+let openDeptFilter = "all", closedDeptFilter = "all";
+let currentTab = "tasks";
+
+async function loadAll() {
+  try {
+    const [tRes, cRes, pRes, chRes, fRes] = await Promise.all([
+      fetch(`${API}/tasks-all`),
+      fetch(`${API}/tasks-closed`),
+      fetch(`${API}/participants-all`),
+      fetch(`${API}/checklist`),
+      fetch(`${API}/stats/failed`),
+    ]);
+    const td = await tRes.json();
+    const cd = await cRes.json();
+    const pd = await pRes.json();
+    const chd = await chRes.json();
+    const fd = await fRes.json();
+
+    allTasks = td.tasks || [];
+    closedTasks = cd.tasks || [];
+    allParticipants = pd.participants || [];
+
+    (chd.checklist || []).forEach(r => {
+      checklist[`${r.task_id}_${r.participant_name}`] = r;
+    });
+
+    // Загружаем участников для каждой задачи
+    await Promise.all(allTasks.map(async t => {
+      const r = await fetch(`${API}/task/${t.task_id}/participants`);
+      const d = await r.json();
+      taskParticipants[t.task_id] = d.participants || [];
+    }));
+
+    updateHeader(fd.failed || []);
+    renderAll();
+  } catch(e) {
+    document.getElementById('tasks-list').innerHTML = `<div class="empty">⚠️ Не удалось подключиться к серверу.</div>`;
+  }
+}
+
+function updateHeader(failed) {
+  const open = allTasks.filter(t => String(t.status||'').toLowerCase() !== 'closed');
+  const closed = allTasks.filter(t => String(t.status||'').toLowerCase() === 'closed');
+  const full = open.filter(t => parseInt(t.current_participants) >= parseInt(t.max_participants));
+  document.getElementById('h-tasks').textContent = open.length;
+  document.getElementById('h-parts').textContent = allParticipants.length;
+  document.getElementById('h-failed').textContent = failed.length;
+  document.getElementById('s-open').textContent = open.length;
+  document.getElementById('s-closed').textContent = closed.length;
+  document.getElementById('s-full').textContent = full.length;
+  document.getElementById('s-parts').textContent = allParticipants.length;
+  document.getElementById('s-failed').textContent = failed.length;
+}
+
+function renderAll() {
+  renderTaskList();
+  renderClosedList();
+  renderParticipants();
+  renderStats();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── ЗАДАЧИ ──
+function renderTaskList() {
+  const openTasks = allTasks.filter(t => String(t.status||'').toLowerCase() !== 'closed');
+  const depts = [...new Set(openTasks.map(t => t.department))];
+  const filtered = openDeptFilter === 'all' ? openTasks : openTasks.filter(t => t.department === openDeptFilter);
+
+  document.getElementById('dept-filter-open').innerHTML =
+    ['all', ...depts].map(d => `<div class="dept-tag ${openDeptFilter===d?'active':''}" onclick="setOpenDept('${d}')">${d==='all'?'Все':d}</div>`).join('');
+
+  document.getElementById('tasks-list').innerHTML = filtered.length === 0
+    ? '<div class="empty">Нет открытых задач</div>'
+    : filtered.map(t => taskCard(t, false)).join('');
+}
+
+function renderClosedList() {
+  const depts = [...new Set(closedTasks.map(t => t.department))];
+  const filtered = closedDeptFilter === 'all' ? closedTasks : closedTasks.filter(t => t.department === closedDeptFilter);
+
+  document.getElementById('dept-filter-closed').innerHTML =
+    ['all', ...depts].map(d => `<div class="dept-tag ${closedDeptFilter===d?'active':''}" onclick="setClosedDept('${d}')">${d==='all'?'Все':d}</div>`).join('');
+
+  document.getElementById('closed-list').innerHTML = filtered.length === 0
+    ? '<div class="empty">Закрытых задач нет</div>'
+    : filtered.map(t => taskCard(t, true)).join('');
+}
+
+function taskCard(t, isClosed) {
+  const parts = taskParticipants[t.task_id] || [];
+  const cur = parseInt(t.current_participants) || 0;
+  const max = parseInt(t.max_participants) || 1;
+  const pct = Math.round((cur/max)*100);
+  const full = cur >= max;
+
+  const partsHtml = parts.length === 0
+    ? '<div class="empty" style="padding:20px">Участников пока нет</div>'
+    : `<table class="p-table">
+        <thead><tr><th>Имя</th><th>Telegram</th><th>Записался</th><th>Пров. 1</th><th>Пров. 2</th><th>Финал</th></tr></thead>
+        <tbody>${parts.map(p => {
+          const key = `${t.task_id}_${p.name}`;
+          const row = checklist[key] || {};
+          return `<tr>
+            <td><b>${p.name}</b></td>
+            <td><a class="tg-link" href="https://t.me/${p.telegram_username}" target="_blank">@${p.telegram_username}</a></td>
+            <td style="color:var(--muted);font-size:12px">${p.registered_at||'—'}</td>
+            <td><div class="check-box ${row.check_date_1_done==='TRUE'?'checked':''}" ${isClosed?'':'onclick="toggleCheck(\''+key+'\',\'check_date_1_done\',this)"'}></div></td>
+            <td><div class="check-box ${row.check_date_2_done==='TRUE'?'checked':''}" ${isClosed?'':'onclick="toggleCheck(\''+key+'\',\'check_date_2_done\',this)"'}></div></td>
+            <td><div class="check-box ${row.final_done==='TRUE'?'checked':''}" ${isClosed?'':'onclick="toggleCheck(\''+key+'\',\'final_done\',this)"'}></div></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+
+  return `<div class="task-card">
+    <div class="task-header" onclick="toggleTask(${t.task_id})">
+      <div class="task-left">
+        <div class="task-title">${t.title}</div>
+        <div class="dept-badge ${isClosed?'closed-badge':''}">${t.department}</div>
+        ${isClosed ? '<div class="dept-badge closed-badge">🔒 Закрыта</div>' : ''}
+      </div>
+      <div class="task-right">
+        <div class="slots-text">${cur}/${max}</div>
+        <div class="bar"><div class="bar-fill ${full?'full':''}" style="width:${pct}%"></div></div>
+        ${!isClosed ? `<button class="close-btn" onclick="event.stopPropagation();closeTask(${t.task_id})">Закрыть задачу</button>` : ''}
+        <div class="chevron" id="chev-${t.task_id}">▼</div>
+      </div>
+    </div>
+    <div class="task-body" id="body-${t.task_id}">
+      <div class="task-info">
+        <div class="task-desc">${t.description||'Нет описания'}</div>
+        <div class="dates-row">
+          <div class="date-chip">📅 Пров. 1: ${t.check_date_1||'—'}</div>
+          <div class="date-chip">📅 Пров. 2: ${t.check_date_2||'—'}</div>
+          <div class="date-chip dl">🏁 Дедлайн: ${t.deadline||'—'}</div>
+        </div>
+      </div>
+      ${partsHtml}
+    </div>
+  </div>`;
+}
+
+function toggleTask(id) {
+  document.getElementById(`body-${id}`).classList.toggle('open');
+  document.getElementById(`chev-${id}`).classList.toggle('open');
+}
+
+function setOpenDept(d) { openDeptFilter = d; renderTaskList(); }
+function setClosedDept(d) { closedDeptFilter = d; renderClosedList(); }
+
+async function closeTask(taskId) {
+  if (!confirm('Закрыть задачу? Она пропадёт с сайта записи.')) return;
+  const res = await fetch(`${API}/task/${taskId}/close`, { method: 'POST' });
+  if (res.ok) {
+    // Обновляем локальные данные
+    const task = allTasks.find(t => t.task_id === taskId);
+    if (task) task.status = 'closed';
+    closedTasks = allTasks.filter(t => String(t.status||'').toLowerCase() === 'closed');
+    renderTaskList();
+    renderClosedList();
+    updateHeader([]);
+    // Обновляем счётчик failed
+    const fRes = await fetch(`${API}/stats/failed`);
+    const fData = await fRes.json();
+    document.getElementById('h-failed').textContent = (fData.failed||[]).length;
+    document.getElementById('s-failed').textContent = (fData.failed||[]).length;
+  }
+}
+
+// ── УЧАСТНИКИ ──
+function renderParticipants() {
+  filterParticipants();
+}
+
+function filterParticipants() {
+  const q = document.getElementById('p-search').value.toLowerCase();
+  const filtered = allParticipants.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    (p.task_title||'').toLowerCase().includes(q) ||
+    (p.telegram_username||'').toLowerCase().includes(q)
+  );
+
+  if (filtered.length === 0) {
+    document.getElementById('participants-table').innerHTML = '<div class="empty">Участников не найдено</div>';
+    return;
+  }
+
+  document.getElementById('participants-table').innerHTML = `
+    <table class="full-table">
+      <thead><tr><th>#</th><th>Имя</th><th>Telegram</th><th>Задача</th><th>Дата записи</th></tr></thead>
+      <tbody>${filtered.map((p,i) => `<tr>
+        <td style="color:var(--muted)">${i+1}</td>
+        <td><b>${p.name}</b></td>
+        <td><a class="tg-link" href="https://t.me/${p.telegram_username}" target="_blank">@${p.telegram_username}</a></td>
+        <td>${p.task_title||'—'}</td>
+        <td style="color:var(--muted);font-size:12px">${p.registered_at||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+// ── СТАТИСТИКА ──
+async function renderStats() {
+  try {
+    const res = await fetch(`${API}/stats/failed`);
+    const data = await res.json();
+    const failed = data.failed || [];
+
+    document.getElementById('s-failed').textContent = failed.length;
+    document.getElementById('h-failed').textContent = failed.length;
+
+    if (failed.length === 0) {
+      document.getElementById('stats-content').innerHTML = '<div class="empty">🎉 Все участники выполнили свои задачи!</div>';
+      return;
+    }
+
+    document.getElementById('stats-content').innerHTML = `
+      <div class="fail-count-banner">⚠️ ${failed.length} участник(ов) не выполнили задачу в срок</div>
+      ${failed.map(f => `
+        <div class="fail-card">
+          <div>
+            <div class="fail-name">${f.name} ${f.telegram_username ? `<a class="tg-link" href="https://t.me/${f.telegram_username}" target="_blank">@${f.telegram_username}</a>` : ''}</div>
+            <div class="fail-task">📌 ${f.task_title}</div>
+          </div>
+          <div class="fail-checks">
+            <div class="check-chip ${f.check_date_1_done==='TRUE'?'done':'fail'}">Пров.1 ${f.check_date_1_done==='TRUE'?'✓':'✗'}</div>
+            <div class="check-chip ${f.check_date_2_done==='TRUE'?'done':'fail'}">Пров.2 ${f.check_date_2_done==='TRUE'?'✓':'✗'}</div>
+            <div class="check-chip ${f.final_done==='TRUE'?'done':'fail'}">Финал ${f.final_done==='TRUE'?'✓':'✗'}</div>
+          </div>
+        </div>`).join('')}`;
+  } catch {
+    document.getElementById('stats-content').innerHTML = '<div class="empty">Не удалось загрузить статистику</div>';
+  }
+}
+
+// ── ЧЕКЛИСТ ──
+function toggleCheck(key, field, el) {
+  el.classList.toggle('checked');
+  const isChecked = el.classList.contains('checked');
+  if (!checklist[key]) checklist[key] = {};
+  checklist[key][field] = isChecked ? 'TRUE' : 'FALSE';
+  if (!pendingChanges[key]) pendingChanges[key] = {};
+  pendingChanges[key][field] = isChecked ? 'TRUE' : 'FALSE';
+  document.getElementById('save-btn').classList.add('visible');
+}
+
+async function saveChecklist() {
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '⏳ Сохраняем...';
+  try {
+    const res = await fetch(`${API}/checklist/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates: pendingChanges })
+    });
+    if (res.ok) {
+      pendingChanges = {};
+      btn.textContent = '✅ Сохранено!';
+      setTimeout(() => { btn.classList.remove('visible'); btn.textContent = '💾 Сохранить'; }, 2000);
+      // Обновляем статистику
+      renderStats();
+    } else {
+      btn.textContent = '❌ Ошибка';
+      setTimeout(() => { btn.textContent = '💾 Сохранить'; }, 2000);
+    }
+  } catch {
+    btn.textContent = '❌ Сервер недоступен';
+    setTimeout(() => { btn.textContent = '💾 Сохранить'; }, 2000);
+  }
+}
+
+loadAll();
+</script>
+</body>
+</html>
